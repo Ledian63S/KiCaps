@@ -10,8 +10,10 @@ function createWindow() {
     minWidth: 700,
     minHeight: 580,
     frame: false,
+    hasShadow: true,
+    thickFrame: false,
     backgroundColor: '#060606',
-    icon: path.join(__dirname, 'icon.png'),
+    icon: path.join(__dirname, 'icon.ico'),
     title: 'KiCaps',
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
