@@ -24,6 +24,11 @@ function createWindow() {
 
   win.loadFile('Quanta V2.html');
   win.setMenuBarVisibility(false);
+  win.webContents.on('did-finish-load', () => {
+    win.webContents.executeJavaScript(
+      'document.documentElement.classList.add("electron-app")'
+    );
+  });
 }
 
 app.whenReady().then(() => {

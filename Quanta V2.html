@@ -275,6 +275,19 @@ body      { background:#060606; }
 .tseg-btn:not(.on):hover { background:#181818;color:#777; }
 
 /* ═══════════════════════════════════════
+   ELECTRON — fill full native window
+   ═══════════════════════════════════════ */
+html.electron-app body { background:#0c0c0c; }
+html.electron-app #root { align-items:stretch; justify-content:stretch; padding:0; }
+html.electron-app .w {
+  width:100% !important; height:100% !important;
+  border:none !important; box-shadow:none !important;
+  animation:none !important;
+}
+html.electron-app .w::before,
+html.electron-app .w::after { display:none !important; }
+
+/* ═══════════════════════════════════════
    LIGHT THEME
    ═══════════════════════════════════════ */
 body.light { background:#b8bec8; }
