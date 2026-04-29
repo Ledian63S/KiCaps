@@ -1,0 +1,897 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KiCaps — Position Calculator</title>
+<link rel="icon" type="image/png" href="icon.png">
+<script src="lib/react.min.js"></script>
+<script src="lib/react-dom.min.js"></script>
+<script src="lib/babel.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+
+:root {
+  --mono: 'JetBrains Mono','Cascadia Code',monospace;
+  --a:    oklch(73% 0.18 50);
+  --a2:   oklch(60% 0.18 50);
+  --ad:   oklch(73% 0.18 50 / 0.12);
+  --am:   oklch(73% 0.18 50 / 0.22);
+  --red:  oklch(62% 0.22 25);
+  --grn:  oklch(66% 0.17 152);
+  --ph:   14px;
+  --bdr:  #222;
+}
+
+@keyframes scaleIn  { from{opacity:0;transform:scale(.975)} to{opacity:1;transform:scale(1)} }
+@keyframes fadeUp   { from{opacity:0;transform:translateY(5px)} to{opacity:1;transform:translateY(0)} }
+@keyframes numPop   { 0%{transform:scale(1)} 40%{transform:scale(1.07)} 100%{transform:scale(1)} }
+@keyframes rowFlash { from{background:var(--am)} to{background:transparent} }
+@keyframes overlayIn{ from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:translateY(0)} }
+@keyframes blink    { 0%,100%{opacity:1} 50%{opacity:.35} }
+
+html,body { width:100%;height:100%;overflow:hidden;font-family:var(--mono); }
+body      { background:#060606; }
+#root     { width:100%;height:100%;display:flex;align-items:center;justify-content:center; }
+
+/* ── WINDOW ── */
+.w {
+  width:min(820px,99vw); height:min(700px,98vh);
+  background:#0c0c0c; border:1px solid #252525;
+  display:flex; flex-direction:column; overflow:hidden;
+  box-shadow:0 0 0 1px #000, 0 24px 64px rgba(0,0,0,.9);
+  position:relative;
+  animation:scaleIn .28s cubic-bezier(.16,1,.3,1);
+  user-select:none;
+}
+.w::before,.w::after {
+  content:'';position:absolute;pointer-events:none;z-index:10;width:14px;height:14px;
+}
+.w::before{top:0;left:0;border-top:2px solid var(--a);border-left:2px solid var(--a);}
+.w::after {bottom:0;right:0;border-bottom:2px solid var(--a);border-right:2px solid var(--a);}
+
+/* ── TITLEBAR ── */
+.tb {
+  height:33px;flex-shrink:0;display:flex;align-items:center;
+  border-bottom:1px solid var(--bdr);background:#0c0c0c;position:relative;z-index:5;
+  cursor:grab;
+  -webkit-app-region:drag;
+}
+.tb:active { cursor:grabbing; }
+.tb-btn, .tb-logo, [data-ot] { -webkit-app-region:no-drag; }
+.tb::after {
+  content:'';position:absolute;bottom:-1px;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,var(--a) 0%,transparent 45%);
+}
+.tb-logo { display:flex;align-items:center;gap:8px;padding:0 var(--ph);border-right:1px solid var(--bdr);height:100%;flex-shrink:0; }
+.tb-q    { font-size:10px;font-weight:700;letter-spacing:.22em;color:#ccc;text-transform:uppercase; }
+.tb-sep  { color:#2a2a2a; }
+.tb-sub  { font-size:8.5px;color:#444;letter-spacing:.08em; }
+.tb-sp   { flex:1; }
+.tb-pill { font-size:9.5px;font-weight:500;letter-spacing:.10em;color:var(--a);border:1px solid color-mix(in oklch,var(--a) 35%,transparent);padding:1px 8px;background:var(--ad);margin-right:10px; }
+.tb-live { display:flex;align-items:center;gap:5px;font-size:8px;color:#444;letter-spacing:.08em;margin-right:8px; }
+.tb-dot  { width:5px;height:5px;border-radius:50%;background:var(--grn);animation:blink 2s ease-in-out infinite; }
+.tb-btn  { width:33px;height:100%;border:none;border-left:1px solid #181818;background:transparent;color:#3a3a3a;cursor:pointer;font-size:10px;display:flex;align-items:center;justify-content:center;transition:background .1s,color .1s; }
+.tb-btn:hover   { background:#141414;color:#888; }
+.tb-btn.x:hover { background:var(--red);color:#fff; }
+
+/* ── BODY ── */
+.body { flex:1;display:flex;min-height:0; }
+
+/* ── LEFT PANEL ── */
+.left {
+  width:270px;min-width:270px;border-right:1px solid var(--bdr);
+  display:flex;flex-direction:column;background:#0c0c0c;
+  animation:fadeUp .35s cubic-bezier(.16,1,.3,1) .04s both;
+}
+
+/* FIELD GROUP */
+.fg { border-bottom:1px solid var(--bdr);position:relative; }
+.fg::after { content:'';position:absolute;bottom:0;left:0;width:0;height:1px;background:linear-gradient(90deg,var(--a),transparent);transition:width .22s cubic-bezier(.16,1,.3,1); }
+.fg:focus-within::after { width:100%; }
+
+.fh { padding:9px var(--ph) 0;display:flex;align-items:center;justify-content:space-between; }
+.fh-lbl { font-size:7px;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:#777; }
+
+/* big number input */
+.big-wrap { display:flex;align-items:center;padding:1px var(--ph) 0; }
+.big-pre  { font-size:16px;color:#666;font-weight:300;margin-right:4px;flex-shrink:0;user-select:none; }
+.big-in   {
+  flex:1;background:transparent;border:none;outline:none;
+  font-family:var(--mono);font-size:42px;font-weight:600;color:#ddd;
+  padding:0;min-width:0;letter-spacing:-.03em;
+  font-variant-numeric:tabular-nums lining-nums;
+  font-feature-settings:"tnum" 1,"lnum" 1,"zero" 1;
+  -moz-appearance:textfield;caret-color:var(--a);
+}
+.big-in.sm { font-size:13px;font-weight:500; }
+.big-in::placeholder { color:#242424; }
+.big-in::-webkit-inner-spin-button,
+.big-in::-webkit-outer-spin-button { -webkit-appearance:none; }
+.big-suf { font-size:9px;font-weight:700;color:#555;letter-spacing:.14em;align-self:flex-end;padding-bottom:9px;margin-left:6px; }
+
+/* hint line below big input */
+.big-hint { padding:2px var(--ph) 8px;font-size:9px;color:#555; }
+
+/* mode toggle — inline in header */
+.mtog-inline { display:flex;border:1px solid #232323;overflow:hidden;gap:0; }
+.mbtn-sm { padding:2px 8px;border:none;background:#111;font-family:var(--mono);font-size:7.5px;font-weight:700;letter-spacing:.08em;color:#555;cursor:pointer;transition:background .13s,color .13s;border-left:1px solid #232323; }
+.mbtn-sm:first-child { border-left:none; }
+.mbtn-sm.on { background:var(--a);color:#000; }
+.mbtn-sm:not(.on):hover { background:#181818;color:#888; }
+
+/* balance — now a standard fg block at bottom of left panel, no separate styles needed */
+
+/* ── INSTRUMENT LIST ── */
+.ig-hdr  { display:flex;align-items:center;justify-content:space-between;padding:8px var(--ph) 6px; }
+.ig-hlbl { font-size:7px;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:#777; }
+.ig-mgr  { font-size:9px;color:#555;cursor:pointer;transition:color .12s;background:transparent;border:none;font-family:var(--mono);letter-spacing:.08em; }
+.ig-mgr:hover { color:var(--a); }
+
+/* each instrument row — full width, no border-box outline */
+.ic {
+  display:flex;align-items:center;gap:0;cursor:pointer;
+  border-top:1px solid #1c1c1c;
+  transition:background .1s;position:relative;
+  overflow:hidden;
+}
+.ic:first-child { border-top:none; }
+.ic:hover { background:#141414; }
+.ic.on    { background:#121212; }
+
+/* left accent bar */
+.ic-bar { width:2px;height:100%;background:transparent;flex-shrink:0;align-self:stretch;transition:background .15s; }
+.ic.on .ic-bar { background:var(--a); }
+
+.ic-body { flex:1;display:flex;align-items:center;gap:0;padding:11px 12px; }
+.ic-tick { font-size:11px;font-weight:700;color:#888;width:36px;flex-shrink:0;letter-spacing:.01em; }
+.ic.on .ic-tick { color:var(--a); }
+.ic-name { flex:1;font-size:9px;color:#666; }
+.ic.on .ic-name { color:#888; }
+.ic-pv   { font-size:9px;color:#555;font-weight:600; }
+.ic.on .ic-pv { color:var(--a2); }
+
+/* ── RIGHT PANEL ── */
+.right { flex:1;display:flex;flex-direction:column;min-width:0;background:#0d0d0d;animation:fadeUp .35s cubic-bezier(.16,1,.3,1) .08s both; }
+
+/* RESULT */
+.rz { flex-shrink:0;border-bottom:1px solid var(--bdr); }
+.rz-accent { height:2px;background:linear-gradient(90deg,var(--a) 0%,transparent 55%); }
+.rz-body   { padding:12px 20px 10px;display:flex;align-items:stretch; }
+.rz-main   { flex:1;display:flex;flex-direction:column;align-items:center;text-align:center; }
+.rz-lbl    { font-size:7px;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:#666;margin-bottom:1px; }
+.rz-num    { font-family:var(--mono);font-size:84px;font-weight:700;color:#eee;line-height:.84;letter-spacing:-.05em;font-variant-numeric:tabular-nums lining-nums;font-feature-settings:"tnum" 1,"lnum" 1,"zero" 1;transition:color .16s;padding:14px 12px; }
+.rz-num.ov  { color:var(--a); }
+.rz-num.pop { animation:numPop .28s cubic-bezier(.34,1.56,.64,1); }
+.rz-unit   { font-size:8.5px;font-weight:700;color:#555;letter-spacing:.18em;text-transform:uppercase;margin-top:4px; }
+
+/* util bar */
+.util-wrap  { margin-top:11px;width:100%; }
+.util-row   { display:flex;justify-content:space-between;margin-bottom:4px; }
+.util-row span { font-size:7px;font-weight:700;letter-spacing:.10em;text-transform:uppercase;color:#666; }
+.util-row span:last-child { color:#888; }
+.util-track { width:100%;height:2px;background:#1e1e1e;position:relative; }
+.util-fill  { height:100%;background:var(--a);transition:width .28s cubic-bezier(.16,1,.3,1);position:relative; }
+.util-fill::after { content:'';position:absolute;right:-1px;top:-3px;width:2px;height:8px;background:var(--a); }
+
+/* meta cells — 3 cols, spans full panel width */
+.rz-meta { display:grid;grid-template-columns:repeat(3,1fr);border-top:1px solid var(--bdr);border-left:1px solid var(--bdr); }
+.rz-cell { padding:7px 10px;border-right:1px solid var(--bdr);border-bottom:1px solid var(--bdr);display:flex;flex-direction:column;gap:2px;align-items:center; }
+.rz-cl   { font-size:7px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#777; }
+.rz-cv   { font-size:12px;font-weight:500;color:var(--a);font-variant-numeric:tabular-nums; }
+.rz-cv.dim { color:#999; }
+
+/* override — inline row beside contracts number */
+.ov-wrap  { display:flex;align-items:center;justify-content:center;gap:18px;margin-top:4px; }
+.ov-btn   { width:32px;height:32px;border:none;background:transparent;color:#3a3a3a;cursor:pointer;font-size:22px;font-weight:300;display:flex;align-items:center;justify-content:center;transition:color .12s;font-family:var(--mono); }
+.ov-btn:hover  { color:var(--a); }
+.ov-badge      { padding:3px 8px;cursor:pointer;border:none;color:#444;background:transparent;transition:color .12s;font-family:var(--mono);font-size:7px;font-weight:700;letter-spacing:.12em;text-align:center; }
+.ov-badge.manual { color:var(--a); }
+
+/* stats strip */
+.ss   { display:flex;align-items:stretch;flex-shrink:0;border-bottom:1px solid var(--bdr);background:#0b0b0b; }
+.ss-i { flex:1;display:flex;flex-direction:column;gap:2px;padding:6px 10px;border-right:1px solid var(--bdr); }
+.ss-i:last-child { border-right:none; }
+.ss-l { font-size:6.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#666; }
+.ss-v { font-size:11px;color:#aaa;font-variant-numeric:tabular-nums; }
+
+/* table header */
+.th   { display:flex;align-items:center;gap:10px;padding:5px 12px;border-bottom:1px solid var(--bdr);background:#0b0b0b;flex-shrink:0; }
+.th-l { font-size:7px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:#777; }
+.th-r { flex:1;height:1px;background:#1e1e1e; }
+.th-h { font-size:7.5px;color:#555; }
+
+/* table */
+.lw { flex:1;overflow-y:auto;min-height:0; }
+.lw::-webkit-scrollbar { width:2px; }
+.lw::-webkit-scrollbar-thumb { background:#222; }
+.lt { width:100%;border-collapse:collapse; }
+.lt thead { position:sticky;top:0;z-index:2; }
+.lt th { padding:5px 12px;background:#0b0b0b;border-bottom:1px solid #1e1e1e;font-size:7px;font-weight:700;letter-spacing:.11em;text-transform:uppercase;color:#666;text-align:right; }
+.lt th:first-child { text-align:left; }
+.lt td { padding:5px 12px;border-bottom:1px solid #141414;font-size:10.5px;color:#888;text-align:right;font-variant-numeric:tabular-nums; }
+.lt td:first-child { text-align:left;color:#999; }
+.lt tr { cursor:pointer;transition:background .07s; }
+.lt tr:hover td { background:#161616;color:#aaa; }
+.lt tr:hover td:first-child { color:#bbb; }
+.lt tr.cur td { background:var(--ad) !important;color:#bbb !important; }
+.lt tr.cur td:first-child { color:var(--a) !important;font-weight:700; }
+.lt tr.cur td.hi { color:#eee !important;font-weight:700; }
+.lt tr.flash td { animation:rowFlash .35s ease; }
+.slip-p { color:oklch(62% 0.22 25 / .7) !important; }
+.slip-n { color:oklch(66% 0.17 152 / .7) !important; }
+
+/* status bar */
+.sb { height:24px;flex-shrink:0;display:flex;align-items:center;border-top:1px solid #1a1a1a;background:#080808;position:relative;z-index:10; }
+.sb-item { display:flex;align-items:center;gap:5px;padding:0 10px;border-right:1px solid #181818;height:100%;font-size:8px;color:#484848; }
+.sb-val  { color:#666;font-weight:500; }
+.sb-sp   { flex:1; }
+.sb-btn  { padding:0 10px;height:100%;border:none;border-left:1px solid #181818;background:transparent;cursor:pointer;font-family:var(--mono);font-size:8px;color:#484848;display:flex;align-items:center;gap:5px;transition:background .1s,color .1s; }
+.sb-btn:hover  { background:#0f0f0f;color:#777; }
+.sb-btn.active { color:var(--a); }
+
+/* ── OVERLAYS ── */
+.overlay { position:absolute;bottom:calc(100% + 3px);background:#111;border:1px solid #272727;z-index:100;box-shadow:0 -8px 28px rgba(0,0,0,.8);animation:overlayIn .18s cubic-bezier(.16,1,.3,1); }
+
+/* instrument manage overlay */
+.im-wrap  { width:270px;max-height:320px;overflow-y:auto; }
+.im-wrap::-webkit-scrollbar { width:2px; }
+.im-wrap::-webkit-scrollbar-thumb { background:#222; }
+.im-grp   { border-bottom:1px solid #1a1a1a; }
+.im-grp:last-child { border-bottom:none; }
+.im-glbl  { font-size:7px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:#3a3a3a;padding:7px 12px 4px; }
+.im-row   { display:flex;align-items:center;gap:8px;padding:6px 12px;border-top:1px solid #181818;cursor:default; }
+.im-bar   { width:2px;height:28px;border-radius:1px;flex-shrink:0; }
+.im-info  { flex:1;display:flex;flex-direction:column;gap:1px; }
+.im-tick  { font-size:10.5px;font-weight:700;color:#888; }
+.im-tick.fav { color:var(--a); }
+.im-name  { font-size:8px;color:#444; }
+.im-pv    { font-size:8.5px;color:#444;font-weight:600; }
+.im-star  { background:transparent;border:1px solid #232323;width:24px;height:24px;cursor:pointer;font-size:11px;color:#3a3a3a;display:flex;align-items:center;justify-content:center;transition:all .12s;font-family:var(--mono); }
+.im-star:hover { border-color:var(--a);color:var(--a); }
+.im-star.on    { border-color:var(--am);color:var(--a);background:var(--ad); }
+
+/* settings overlay */
+.cfg { width:220px; }
+.cfg-sec  { border-bottom:1px solid #1a1a1a;padding:8px 12px; }
+.cfg-sec:last-child { border-bottom:none; }
+.cfg-head { font-size:7px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:#444;margin-bottom:7px; }
+.cfg-row  { display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px; }
+.cfg-row:last-child { margin-bottom:0; }
+.cfg-lbl  { font-size:9px;color:#777; }
+/* toggle */
+.tog { position:relative;width:28px;height:15px;flex-shrink:0; }
+.tog input { opacity:0;width:0;height:0;position:absolute; }
+.tog-t { position:absolute;inset:0;border:1px solid #282828;background:#0e0e0e;cursor:pointer;transition:background .14s,border-color .14s; }
+.tog input:checked + .tog-t { background:var(--a);border-color:var(--a); }
+.tog-t::after { content:'';position:absolute;top:2px;left:2px;width:9px;height:9px;background:#3a3a3a;transition:transform .14s,background .14s; }
+.tog input:checked + .tog-t::after { transform:translateX(13px);background:#000; }
+/* theme seg */
+.theme-seg { display:flex;border:1px solid #1e1e1e;overflow:hidden;width:100%; }
+.tseg-btn  { flex:1;padding:4px 0;border:none;background:#101010;font-family:var(--mono);font-size:7.5px;font-weight:700;letter-spacing:.08em;color:#555;cursor:pointer;transition:background .12s,color .12s;border-right:1px solid #1e1e1e; }
+.tseg-btn:last-child { border-right:none; }
+.tseg-btn.on { background:var(--a);color:#000; }
+.tseg-btn:not(.on):hover { background:#181818;color:#777; }
+
+/* ═══════════════════════════════════════
+   LIGHT THEME
+   ═══════════════════════════════════════ */
+body.light { background:#b8bec8; }
+.light-theme {
+  background:#fff;border-color:#d0d5e0;
+  box-shadow:0 0 0 1px #a8b0c0,0 20px 50px rgba(0,0,0,.2);
+  --a:#6b4c1e; --a2:#5a3e18; --ad:rgba(107,76,30,.09); --am:rgba(107,76,30,.18);
+  --bdr:#e0e4ec;
+}
+.light-theme::before,.light-theme::after { border-color:#b07030; }
+.light-theme .tb        { background:#f0f2f8;border-color:#dde1ec; }
+.light-theme .tb::after { background:linear-gradient(90deg,#b07030 0%,transparent 45%); }
+.light-theme .tb-q      { color:#1a1a1a; }
+.light-theme .tb-sep    { color:#ccc; }
+.light-theme .tb-sub    { color:#999; }
+.light-theme .tb-pill   { color:#7a4820;border-color:#b0703080;background:#b0703012; }
+.light-theme .tb-live   { color:#aaa; }
+.light-theme .tb-btn    { color:#bbb;border-color:#e0e4ec; }
+.light-theme .tb-btn:hover { background:#e4e8f4;color:#555; }
+.light-theme .left      { background:#f5f6fb;border-color:#dde1ec; }
+.light-theme .right     { background:#fff; }
+.light-theme .fg        { border-color:#e6eaf4; }
+.light-theme .fh-lbl    { color:#aaa; }
+.light-theme .big-pre   { color:#ccc; }
+.light-theme .big-in    { color:#111; }
+.light-theme .big-in::placeholder { color:#ddd; }
+.light-theme .big-suf   { color:#ccc; }
+.light-theme .big-hint  { color:#bbb; }
+.light-theme .mtog      { border-color:#dde1ec; }
+.light-theme .mbtn      { background:#eaecf6;color:#aaa; }
+.light-theme .mbtn.on   { background:#b07030;color:#fff; }
+.light-theme .mbtn:not(.on):hover { background:#e0e4f2;color:#777; }
+.light-theme .bal-row   { border-color:#e6eaf4; }
+.light-theme .bal-lbl   { color:#aaa; }
+.light-theme .bal-sp    { border-color:#dde1ec; }
+.light-theme .bal-pre   { color:#bbb; }
+.light-theme .bal-in    { color:#555; }
+.light-theme .bal-in:focus { color:#111; }
+.light-theme .ig-hlbl   { color:#bbb; }
+.light-theme .ig-mgr    { color:#bbb; }
+.light-theme .ig-mgr:hover { color:#7a4820; }
+.light-theme .ic        { border-color:#eaeef8; }
+.light-theme .ic:hover  { background:#eef0f8; }
+.light-theme .ic.on     { background:#f5f0e8; }
+.light-theme .ic-bar    { } /* transparent by default */
+.light-theme .ic.on .ic-bar { background:#b07030; }
+.light-theme .ic-tick   { color:#888; }
+.light-theme .ic.on .ic-tick { color:#7a4820; }
+.light-theme .ic-name   { color:#bbb; }
+.light-theme .ic.on .ic-name { color:#888; }
+.light-theme .ic-pv     { color:#ccc; }
+.light-theme .ic.on .ic-pv   { color:#b07030; }
+.light-theme .rz        { border-color:#e6eaf4; }
+.light-theme .rz-accent { background:linear-gradient(90deg,#b07030 0%,transparent 55%); }
+.light-theme .rz-lbl    { color:#bbb; }
+.light-theme .rz-num    { color:#111; }
+.light-theme .rz-num.ov { color:#7a4820; }
+.light-theme .rz-unit   { color:#ccc; }
+.light-theme .util-row span { color:#bbb; }
+.light-theme .util-row span:last-child { color:#999; }
+.light-theme .util-track { background:#e6eaf4; }
+.light-theme .util-fill,.light-theme .util-fill::after { background:#b07030; }
+.light-theme .rz-meta,.light-theme .rz-cell { border-color:#e6eaf4; }
+.light-theme .rz-cl     { color:#bbb; }
+.light-theme .rz-cv     { color:#7a4820; }
+.light-theme .rz-cv.dim { color:#aaa; }
+.light-theme .ov-btn    { background:#eaecf6;border-color:#dde1ec;color:#aaa; }
+.light-theme .ov-btn:hover { border-color:#b07030;color:#7a4820;background:#b0703012; }
+.light-theme .ov-badge  { border-color:#dde1ec;color:#aaa; }
+.light-theme .ov-badge.manual { border-color:#b0703050;color:#7a4820;background:#b0703012; }
+.light-theme .ss        { background:#f0f2f8; }
+.light-theme .ss-i      { border-color:#e4e8f4; }
+.light-theme .ss-l      { color:#bbb; }
+.light-theme .ss-v      { color:#777; }
+.light-theme .th        { background:#f0f2f8;border-color:#e4e8f4; }
+.light-theme .th-l      { color:#aaa; }
+.light-theme .th-r      { background:#e4e8f4; }
+.light-theme .th-h      { color:#ccc; }
+.light-theme .lt th     { background:#f0f2f8;border-color:#e4e8f4;color:#bbb; }
+.light-theme .lt td     { color:#999;border-color:#f4f6fa; }
+.light-theme .lt td:first-child { color:#888; }
+.light-theme .lt tr:hover td { background:#eaeef8;color:#666; }
+.light-theme .lt tr:hover td:first-child { color:#555; }
+.light-theme .lt tr.cur td { background:#b0703010 !important;color:#666 !important; }
+.light-theme .lt tr.cur td:first-child { color:#7a4820 !important; }
+.light-theme .lt tr.cur td.hi { color:#111 !important; }
+.light-theme .lw::-webkit-scrollbar-thumb { background:#dde1ec; }
+.light-theme .sb        { background:#edf0f8;border-color:#dde1ec; }
+.light-theme .sb-item   { border-color:#dde1ec;color:#aaa; }
+.light-theme .sb-val    { color:#777; }
+.light-theme .sb-btn    { border-color:#dde1ec;color:#aaa; }
+.light-theme .sb-btn:hover  { background:#e4e8f4;color:#555; }
+.light-theme .sb-btn.active { color:#7a4820; }
+.light-theme .overlay   { background:#f5f6fb;border-color:#dde1ec;box-shadow:0 -8px 24px rgba(0,0,0,.1); }
+.light-theme .im-glbl   { color:#bbb; }
+.light-theme .im-row    { border-color:#eaeef8; }
+.light-theme .im-tick   { color:#555; }
+.light-theme .im-tick.fav { color:#7a4820; }
+.light-theme .im-name   { color:#aaa; }
+.light-theme .im-pv     { color:#aaa; }
+.light-theme .im-star   { border-color:#dde1ec;color:#bbb; }
+.light-theme .im-star:hover { border-color:#b07030;color:#7a4820; }
+.light-theme .im-star.on    { border-color:#b0703050;color:#7a4820;background:#b0703012; }
+.light-theme .cfg-sec   { border-color:#e6eaf4; }
+.light-theme .cfg-head  { color:#bbb; }
+.light-theme .cfg-lbl   { color:#777; }
+.light-theme .tog-t     { border-color:#dde1ec;background:#eaecf6; }
+.light-theme .tog-t::after { background:#bbb; }
+.light-theme .tog input:checked + .tog-t { background:#b07030;border-color:#b07030; }
+.light-theme .tog input:checked + .tog-t::after { background:#fff; }
+.light-theme .theme-seg { border-color:#dde1ec; }
+.light-theme .tseg-btn  { background:#eaecf6;color:#aaa;border-color:#dde1ec; }
+.light-theme .tseg-btn.on { background:#b07030;color:#fff; }
+.light-theme .tseg-btn:not(.on):hover { background:#e0e4f2;color:#666; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect, useRef, useCallback } = React;
+
+const GROUPS = [
+  { label:'Full Size', keys:['ES','NQ','GC','6E','6B'] },
+  { label:'Micro',     keys:['MES','MNQ','MGC'] },
+];
+const ALL_INSTR = {
+  ES:   { name:'E-mini S&P 500',   pv:50,   step:2    },
+  NQ:   { name:'E-mini Nasdaq',    pv:20,   step:2    },
+  GC:   { name:'Gold Futures',     pv:10,   step:1    },
+  '6E': { name:'Euro FX',          pv:12.5, step:1    },
+  '6B': { name:'British Pound',    pv:6.25, step:1    },
+  MES:  { name:'Micro S&P',        pv:5,    step:0.25 },
+  MNQ:  { name:'Micro Nasdaq',     pv:2,    step:0.25 },
+  MGC:  { name:'Micro Gold',       pv:1,    step:0.25 },
+};
+
+const LS = {
+  get:(k,d)=>{ try{const v=localStorage.getItem(k);return v!==null?JSON.parse(v):d;}catch{return d;} },
+  set:(k,v)=>{ try{localStorage.setItem(k,JSON.stringify(v));}catch{} },
+};
+const f$ = n=>(n==null||isNaN(n))?'—':'$'+Math.abs(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+const fPts = n=>n%1===0?String(n):n.toFixed(2);
+
+function Toggle({checked,onChange}){
+  return(
+    <label className="tog">
+      <input type="checkbox" checked={checked} onChange={e=>onChange(e.target.checked)}/>
+      <div className="tog-t"></div>
+    </label>
+  );
+}
+
+function App(){
+  /* settings */
+  const [remBal,    setRemBal]    = useState(()=>LS.get('q6-rembal',   true));
+  const [remRisk,   setRemRisk]   = useState(()=>LS.get('q6-remrisk',  true));
+  const [remInstr,  setRemInstr]  = useState(()=>LS.get('q6-reminstr', true));
+  const [themeMode, setThemeMode] = useState(()=>LS.get('q6-theme',    'dark'));
+
+  /* calc state */
+  const [instr,    setInstrRaw] = useState(()=>LS.get('q6-instr',  'ES'));
+  const [balance,  setBalance]  = useState(()=>String(LS.get('q6-bal',  50000)));
+  const [riskMode, setRiskMode] = useState(()=>LS.get('q6-rm',     'fixed'));
+  const [riskVal,  setRiskVal]  = useState(()=>String(LS.get('q6-rv',   300)));
+  const [slPts,    setSlPts]    = useState(()=>String(LS.get('q6-sl',   4)));
+  const [override, setOverride] = useState(null);
+  const [favs,     setFavs]     = useState(()=>LS.get('q6-favs',   ['ES','MNQ']));
+
+  /* ui */
+  const [showManage,   setShowManage]   = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [flashRow,     setFlashRow]     = useState(null);
+  const [minimized,    setMinimized]    = useState(false);
+  const [closed,       setClosed]       = useState(false);
+  const numRef   = useRef(null);
+  const tableRef = useRef(null);
+  const prevC    = useRef(null);
+
+  /* window drag */
+  const winRef   = useRef(null);
+  const dragRef  = useRef(null);
+  const [winPos, setWinPos] = useState(null);
+
+  useEffect(()=>{
+    function onMove(e){
+      if(!dragRef.current) return;
+      const {ox,oy}=dragRef.current;
+      setWinPos({x:e.clientX-ox, y:e.clientY-oy});
+    }
+    function onUp(){ dragRef.current=null; document.body.style.userSelect=''; }
+    window.addEventListener('mousemove',onMove);
+    window.addEventListener('mouseup',onUp);
+    return()=>{ window.removeEventListener('mousemove',onMove); window.removeEventListener('mouseup',onUp); };
+  },[]);
+
+  function onTbDown(e){
+    if(e.target.closest('.tb-btn')||e.target.closest('[data-ot]')) return;
+    e.preventDefault();
+    document.body.style.userSelect='none';
+    const rect=winRef.current.getBoundingClientRect();
+    if(!winPos) setWinPos({x:rect.left,y:rect.top});
+    dragRef.current={ox:e.clientX-rect.left, oy:e.clientY-rect.top};
+  }
+
+  /* system dark mode */
+  const [sysDark, setSysDark] = useState(()=>window.matchMedia('(prefers-color-scheme:dark)').matches);
+  useEffect(()=>{
+    const mq=window.matchMedia('(prefers-color-scheme:dark)');
+    const h=e=>setSysDark(e.matches);
+    mq.addEventListener('change',h);
+    return ()=>mq.removeEventListener('change',h);
+  },[]);
+  const isDark = themeMode==='dark'||(themeMode==='system'&&sysDark);
+
+  useEffect(()=>{
+    document.body.className=isDark?'':'light';
+    const r=document.documentElement;
+    if(isDark){
+      r.style.setProperty('--a','oklch(73% 0.18 50)');
+      r.style.setProperty('--a2','oklch(60% 0.18 50)');
+      r.style.setProperty('--ad','oklch(73% 0.18 50 / 0.12)');
+      r.style.setProperty('--am','oklch(73% 0.18 50 / 0.22)');
+    } else {
+      r.style.setProperty('--a','#b07030');
+      r.style.setProperty('--a2','#8a5424');
+      r.style.setProperty('--ad','rgba(176,112,48,.09)');
+      r.style.setProperty('--am','rgba(176,112,48,.18)');
+    }
+  },[isDark]);
+
+  /* persist */
+  useEffect(()=>{ LS.set('q6-theme',   themeMode); },[themeMode]);
+  useEffect(()=>{ LS.set('q6-rembal',  remBal);    },[remBal]);
+  useEffect(()=>{ LS.set('q6-remrisk', remRisk);   },[remRisk]);
+  useEffect(()=>{ LS.set('q6-reminstr',remInstr);  },[remInstr]);
+  useEffect(()=>{ LS.set('q6-favs',    favs);       },[favs]);
+  useEffect(()=>{ if(remInstr) LS.set('q6-instr', instr); },[instr,remInstr]);
+  useEffect(()=>{ if(remBal)   LS.set('q6-bal',   parseFloat(balance)||0); },[balance,remBal]);
+  useEffect(()=>{ if(remRisk){ LS.set('q6-rv', parseFloat(riskVal)||0); LS.set('q6-rm',riskMode); } },[riskVal,riskMode,remRisk]);
+  useEffect(()=>{ LS.set('q6-sl', parseFloat(slPts)||0); },[slPts]);
+  useEffect(()=>{ setOverride(null); },[balance,riskMode,riskVal,slPts,instr]);
+
+  const setInstr = useCallback((t)=>{
+    setInstrRaw(t);
+    if(!favs.includes(t)) setFavs(f=>[...f,t]);
+  },[favs]);
+
+  const toggleFav = useCallback((t)=>{
+    setFavs(f=>{
+      if(f.includes(t)){
+        if(f.length===1) return f;
+        const next=f.filter(x=>x!==t);
+        if(t===instr) setInstrRaw(next[0]);
+        return next;
+      }
+      return [...f,t];
+    });
+  },[instr]);
+
+  /* close overlays on outside click */
+  useEffect(()=>{
+    if(!showManage&&!showSettings) return;
+    const h=e=>{ if(!e.target.closest('.overlay')&&!e.target.closest('[data-ot]')){ setShowManage(false); setShowSettings(false); } };
+    document.addEventListener('mousedown',h);
+    return ()=>document.removeEventListener('mousedown',h);
+  },[showManage,showSettings]);
+
+  /* calculations */
+  const pv      = ALL_INSTR[instr].pv;
+  const ptStep  = ALL_INSTR[instr].step;
+  const balNum  = parseFloat(balance)  || 0;
+  const rvNum   = parseFloat(riskVal)  || 0;
+  const slNum   = parseFloat(slPts)    || 0;
+  const riskDol = riskMode==='percent' ? balNum*rvNum/100 : rvNum;
+  const riskPct = balNum>0 ? riskDol/balNum*100 : 0;
+  const slDol   = slNum*pv;
+  const autoC   = slDol>0 ? Math.max(0,Math.round(riskDol/slDol)) : 0;
+  const contracts=override!==null ? override : autoC;
+  const actRisk  = contracts*slDol;
+  const slippage = actRisk-riskDol;
+  const util     = riskDol>0 ? Math.min(100,actRisk/riskDol*100) : 0;
+
+  /* table rows — centered around slNum so it's always visible */
+  const rows=[];
+  const halfWin=28;
+  if(slNum>0){
+    const ci=Math.round(slNum/ptStep);
+    const si=Math.max(1,ci-halfWin);
+    const ei=ci+halfWin;
+    for(let i=si;i<=ei;i++){
+      const p=+(i*ptStep).toFixed(6);
+      const d=+(p*pv).toFixed(4);
+      const c=Math.max(0,Math.round(riskDol/d));
+      const ar=+(c*d).toFixed(4);
+      rows.push({p,d,c,ar,slip:+(ar-riskDol).toFixed(4)});
+    }
+  } else {
+    for(let p=ptStep;rows.length<60;p=+(p+ptStep).toFixed(6)){
+      const d=+(p*pv).toFixed(4);
+      const c=Math.max(0,Math.round(riskDol/d));
+      const ar=+(c*d).toFixed(4);
+      rows.push({p,d,c,ar,slip:+(ar-riskDol).toFixed(4)});
+    }
+  }
+
+  /* contracts pop */
+  useEffect(()=>{
+    if(prevC.current!==null&&prevC.current!==contracts&&numRef.current){
+      numRef.current.classList.remove('pop');
+      void numRef.current.offsetWidth;
+      numRef.current.classList.add('pop');
+    }
+    prevC.current=contracts;
+  },[contracts]);
+
+  /* auto-scroll selected row to center */
+  const firstScroll = useRef(true);
+  useEffect(()=>{
+    if(!tableRef.current) return;
+    const cur=tableRef.current.querySelector('tr.cur');
+    if(cur){
+      cur.scrollIntoView({block:'center',behavior:firstScroll.current?'instant':'smooth'});
+      firstScroll.current=false;
+    }
+  },[slNum,instr]);
+
+  const handleRowClick=(p)=>{
+    setSlPts(String(p));
+    setFlashRow(p);
+    setTimeout(()=>setFlashRow(null),350);
+  };
+
+  const isLight=!isDark;
+  const favInstr=favs.filter(t=>ALL_INSTR[t]);
+
+  /* sl hint line */
+  const slHint = slDol>0 ? `${f$(slDol)} · ${f$(pv)}/pt` : null;
+  /* risk hint: show % when in fixed mode */
+  const riskHint = riskMode==='fixed' && balNum>0 ? `${riskPct.toFixed(2)}% of balance` : (riskMode==='percent' && riskDol>0 ? f$(riskDol) : null);
+
+  if(closed) return null;
+
+  const winStyle = winPos
+    ? {position:'fixed',left:winPos.x,top:winPos.y,transform:'none',margin:0,animation:'none'}
+    : {};
+
+  return(
+    <div style={{width:'100%',height:'100%',display:'flex',alignItems:'center',justifyContent:'center'}}>
+      <div ref={winRef} className={`w${isLight?' light-theme':''}`}
+        style={{...winStyle,...(minimized?{height:'33px'}:{})}}>
+
+        {/* TITLEBAR */}
+        <div className="tb" onMouseDown={onTbDown}>
+          <div className="tb-logo" style={{cursor:'default'}}>
+            <span className="tb-q">KiCaps</span>
+            <span className="tb-sep"> / </span>
+            <span className="tb-sub">POSITION CALCULATOR</span>
+          </div>
+          <div className="tb-sp"></div>
+          <span className="tb-pill">{instr}</span>
+          <div className="tb-live"><div className="tb-dot"></div>LIVE</div>
+          <button className="tb-btn" title="Minimize" style={{cursor:'pointer'}}
+            onClick={()=>window.electronAPI ? window.electronAPI.minimize() : setMinimized(v=>!v)}>─</button>
+          <button className="tb-btn" title="Maximize" style={{cursor:'pointer'}}
+            onClick={()=>window.electronAPI ? window.electronAPI.maximize() : (setWinPos(null),setMinimized(false))}>□</button>
+          <button className="tb-btn x" title="Close" style={{cursor:'pointer'}}
+            onClick={()=>window.electronAPI ? window.electronAPI.close() : setClosed(true)}>✕</button>
+        </div>
+
+        <div className="body">
+          {/* LEFT */}
+          <div className="left">
+
+            {/* STOP LOSS */}
+            <div className="fg">
+              <div className="fh"><span className="fh-lbl">Stop Loss</span></div>
+              <div className="big-wrap">
+                <span className="big-pre">▲</span>
+                <input className="big-in" type="number" value={slPts} autoFocus
+                  onChange={e=>setSlPts(e.target.value)} step={ptStep} placeholder="0"/>
+                <span className="big-suf">PTS</span>
+              </div>
+              {slHint && <div className="big-hint">{slHint}</div>}
+            </div>
+
+            {/* RISK PER TRADE */}
+            <div className="fg">
+              <div className="fh">
+                <span className="fh-lbl">Risk Per Trade</span>
+                <div className="mtog-inline">
+                  <button className={`mbtn-sm${riskMode==='percent'?' on':''}`} onClick={()=>setRiskMode('percent')}>% PCT</button>
+                  <button className={`mbtn-sm${riskMode==='fixed'?' on':''}`}   onClick={()=>setRiskMode('fixed')}>$ USD</button>
+                </div>
+              </div>
+              <div className="big-wrap" style={{paddingTop:0}}>
+                <span className="big-pre">{riskMode==='fixed'?'$':'%'}</span>
+                <input className="big-in" type="number" value={riskVal}
+                  onChange={e=>setRiskVal(e.target.value)}
+                  step={riskMode==='percent'?0.1:10} placeholder="0"/>
+                <span className="big-suf">{riskMode==='percent'?'PCT':'USD'}</span>
+              </div>
+              {riskHint && <div className="big-hint">{riskHint}</div>}
+            </div>
+
+            {/* INSTRUMENTS — full-width rows, favorites only */}
+            <div style={{flex:1,display:'flex',flexDirection:'column',minHeight:0}}>
+              <div className="ig-hdr">
+                <span className="ig-hlbl">Instrument</span>
+                <button className="ig-mgr" data-ot="1"
+                  onClick={()=>{ setShowManage(v=>!v); setShowSettings(false); }}>
+                  {showManage?'close':'manage ☆'}
+                </button>
+              </div>
+
+              <div style={{flex:1,overflow:'hidden',position:'relative'}}>
+                {favInstr.map(k=>(
+                  <div key={k} className={`ic${instr===k?' on':''}`} onClick={()=>setInstr(k)}>
+                    <div className="ic-bar"></div>
+                    <div className="ic-body">
+                      <span className="ic-tick">{k}</span>
+                      <span className="ic-name">{ALL_INSTR[k].name}</span>
+                      <span className="ic-pv">${ALL_INSTR[k].pv}/pt</span>
+                    </div>
+                  </div>
+                ))}
+
+                {/* manage overlay */}
+                {showManage && (
+                  <div className="overlay" style={{position:'absolute',bottom:0,left:0,right:0,top:'auto'}}>
+                    <div className="im-wrap">
+                      {GROUPS.map(g=>(
+                        <div key={g.label} className="im-grp">
+                          <div className="im-glbl">{g.label}</div>
+                          {g.keys.map(k=>(
+                            <div key={k} className="im-row">
+                              <div className="im-bar" style={{background:favs.includes(k)?'var(--a)':'#222'}}></div>
+                              <div className="im-info">
+                                <span className={`im-tick${favs.includes(k)?' fav':''}`}>{k}</span>
+                                <span className="im-name">{ALL_INSTR[k].name}</span>
+                              </div>
+                              <span className="im-pv">${ALL_INSTR[k].pv}/pt</span>
+                              <button className={`im-star${favs.includes(k)?' on':''}`}
+                                onClick={()=>toggleFav(k)}
+                                title={favs.includes(k)?'Remove':'Add to watchlist'}>
+                                {favs.includes(k)?'★':'☆'}
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* BALANCE — compact row pinned to bottom */}
+            <div style={{flexShrink:0,borderTop:'1px solid var(--bdr)',display:'flex',alignItems:'center',justifyContent:'space-between',padding:'7px 14px'}}>
+              <span style={{fontSize:'7px',fontWeight:700,letterSpacing:'.20em',textTransform:'uppercase',color:'#777'}}>Balance</span>
+              <div style={{display:'flex',alignItems:'center',gap:2,borderBottom:'1px solid #333',paddingBottom:2}}>
+                <span style={{fontSize:'13px',color:'#555',fontFamily:'var(--mono)',fontWeight:400,lineHeight:1}}>$</span>
+                <input className="big-in sm" type="text" inputMode="numeric"
+                  style={{textAlign:'right',width:100}}
+                  value={balance===''?'':(parseFloat(balance)||0).toLocaleString('en-US')}
+                  onChange={e=>setBalance(e.target.value.replace(/[^0-9.]/g,''))}
+                  placeholder="0"/>
+              </div>
+            </div>
+          </div>
+
+          {/* RIGHT */}
+          <div className="right">
+
+            {/* RESULT */}
+            <div className="rz">
+              <div className="rz-accent"></div>
+              <div className="rz-body">
+                <div className="rz-main">
+                  <div className="rz-lbl">— Position Size</div>
+                  <div className="ov-wrap">
+                    <button className="ov-btn" onClick={()=>setOverride(c=>Math.max(0,(c??autoC)-1))}>−</button>
+                    <div ref={numRef} className={`rz-num${override!==null?' ov':''}`}>{contracts}</div>
+                    <button className="ov-btn" onClick={()=>setOverride(c=>Math.max(0,(c??autoC)+1))}>+</button>
+                  </div>
+                  <div style={{display:'flex',alignItems:'center',gap:8,marginTop:2}}>
+                    <div className="rz-unit">Contracts</div>
+                    <span className={`ov-badge${override!==null?' manual':''}`} onClick={()=>setOverride(null)}>
+                      {override!==null?'OVR':'AUTO'}
+                    </span>
+                  </div>
+                  <div className="util-wrap">
+                    <div className="util-row">
+                      <span>Risk Utilization</span>
+                      <span>{Math.round(util)}%</span>
+                    </div>
+                    <div className="util-track">
+                      <div className="util-fill" style={{width:`${util}%`}}></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              {/* meta row — outside rz-body so it spans full panel width */}
+              <div className="rz-meta">
+                <div className="rz-cell">
+                  <span className="rz-cl">Actual Risk</span>
+                  <span className="rz-cv">{f$(actRisk)}</span>
+                </div>
+                <div className="rz-cell">
+                  <span className="rz-cl">Target Risk</span>
+                  <span className="rz-cv dim">{f$(riskDol)}</span>
+                </div>
+                <div className="rz-cell">
+                  <span className="rz-cl">Slippage</span>
+                  <span className="rz-cv" style={{color:Math.abs(slippage)<.5?(isDark?'#444':'#ccc'):slippage>0?'var(--red)':'var(--grn)'}}>
+                    {Math.abs(slippage)<.01?'—':(slippage>0?'+':'')+f$(slippage)}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* STATS */}
+            <div className="ss">
+              <div className="ss-i"><span className="ss-l">SL / Contract</span><span className="ss-v">{fPts(slNum)} pts</span></div>
+              <div className="ss-i"><span className="ss-l">Dollar Value</span><span className="ss-v">{f$(slDol)}</span></div>
+              <div className="ss-i"><span className="ss-l">Point Value</span><span className="ss-v">{f$(pv)}</span></div>
+              <div className="ss-i"><span className="ss-l">Exposure</span><span className="ss-v">{f$(contracts*slDol)}</span></div>
+            </div>
+
+            {/* TABLE */}
+            <div className="th">
+              <span className="th-l">{ALL_INSTR[instr].name}</span>
+              <div className="th-r"></div>
+              <span className="th-h">Stop Loss Ladder</span>
+            </div>
+            <div className="lw" ref={tableRef}>
+              <table className="lt">
+                <thead>
+                  <tr>
+                    <th>SL pts</th><th>SL $</th><th>Contracts</th><th>Actual Risk</th><th>Slippage</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {rows.map(({p,d,c,ar,slip})=>{
+                    const isCur=slNum>0&&Math.abs(p-slNum)<ptStep*0.51;
+                    const isFlash=flashRow===p;
+                    return(
+                      <tr key={p} className={`${isCur?'cur':''}${isFlash?' flash':''}`} onClick={()=>handleRowClick(p)}>
+                        <td>{fPts(p)}</td>
+                        <td>{f$(d)}</td>
+                        <td className={isCur?'hi':''}>{c}</td>
+                        <td>{f$(ar)}</td>
+                        <td className={Math.abs(slip)<.5?'':slip>0?'slip-p':'slip-n'}>
+                          {Math.abs(slip)<.01?'—':(slip>0?'+':'')+f$(slip)}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        {/* STATUS BAR */}
+        <div className="sb">
+          <div className="sb-item"><span>{instr}</span><span className="sb-val">{ALL_INSTR[instr].name}</span></div>
+          <div className="sb-item"><span>SL</span><span className="sb-val">{fPts(slNum)} pts · {f$(slDol)}</span></div>
+          <div className="sb-item"><span>RISK</span><span className="sb-val">{f$(riskDol)}</span></div>
+          <div className="sb-item"><span>RESULT</span><span className="sb-val" style={{color:'var(--a)',fontWeight:700}}>{contracts} contracts</span></div>
+          <div className="sb-sp"></div>
+
+          {/* SETTINGS */}
+          <div style={{position:'relative'}}>
+            {showSettings&&(
+              <div className="overlay cfg right-anchor">
+                <div className="cfg-sec">
+                  <div className="cfg-head">Risk</div>
+                  <div className="cfg-row">
+                    <span className="cfg-lbl">% of Balance</span>
+                    <Toggle checked={riskMode==='percent'} onChange={v=>setRiskMode(v?'percent':'fixed')}/>
+                  </div>
+                </div>
+                <div className="cfg-sec">
+                  <div className="cfg-head">Preferences</div>
+                  <div className="cfg-row"><span className="cfg-lbl">Remember Balance</span><Toggle checked={remBal}   onChange={setRemBal}/></div>
+                  <div className="cfg-row"><span className="cfg-lbl">Remember Risk</span>   <Toggle checked={remRisk}  onChange={setRemRisk}/></div>
+                  <div className="cfg-row"><span className="cfg-lbl">Remember Instrument</span><Toggle checked={remInstr} onChange={setRemInstr}/></div>
+                </div>
+                <div className="cfg-sec">
+                  <div className="cfg-head">Appearance</div>
+                  <div className="theme-seg">
+                    {['system','dark','light'].map(m=>(
+                      <button key={m} className={`tseg-btn${themeMode===m?' on':''}`} onClick={()=>setThemeMode(m)}>{m.toUpperCase()}</button>
+                    ))}
+                  </div>
+                </div>
+                <div className="cfg-sec" style={{textAlign:'center'}}>
+                  <div style={{fontSize:'7.5px',color:'#3a3a3a',lineHeight:1.7}}>KiCaps v1.0 · Made for traders</div>
+                </div>
+              </div>
+            )}
+            <button data-ot="1" className={`sb-btn${showSettings?' active':''}`}
+              onClick={()=>{ setShowSettings(v=>!v); setShowManage(false); }}>
+              ⚙ SETTINGS
+            </button>
+          </div>
+
+          <button className="sb-btn" onClick={()=>setThemeMode(m=>m==='dark'?'light':'dark')}>
+            {isDark?'◑ LIGHT':'○ DARK'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>

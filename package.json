@@ -1,0 +1,48 @@
+{
+  "name": "kicaps",
+  "version": "1.0.0",
+  "description": "KiCaps — Futures Position Size Calculator",
+  "main": "main.js",
+  "author": "Ledian63S",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder --win"
+  },
+  "build": {
+    "appId": "com.kicaps.calculator",
+    "productName": "KiCaps",
+    "asar": false,
+    "files": [
+      "Quanta V2.html",
+      "main.js",
+      "preload.js",
+      "icon.png",
+      "lib/**"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "icon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "installerIcon": "icon.png",
+      "uninstallerIcon": "icon.png",
+      "installerHeaderIcon": "icon.png",
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    }
+  },
+  "devDependencies": {
+    "@electron/packager": "^20.0.0",
+    "electron": "^35.0.0",
+    "electron-builder": "^25.1.8"
+  }
+}

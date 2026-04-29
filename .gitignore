@@ -1,0 +1,5 @@
+node_modules/
+dist/
+quanta-src/
+*.log
+.DS_Store
