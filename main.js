@@ -12,8 +12,8 @@ function createWindow() {
     frame: false,
     hasShadow: true,
     thickFrame: false,
-    backgroundColor: '#060606',
-    icon: path.join(__dirname, 'icon.ico'),
+    backgroundColor: '#0b0d12',
+    icon: path.join(__dirname, 'icon.png'),
     title: 'KiCaps',
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
@@ -32,6 +32,7 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
+  if (process.platform === 'darwin' && app.dock) app.dock.setIcon(path.join(__dirname, 'icon.png'));
   createWindow();
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();

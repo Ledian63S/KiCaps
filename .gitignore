@@ -7,3 +7,6 @@ kicaps-src/
 
 # generated from src/app.jsx by `npm run build:js`
 app.js
+
+# local backups
+*.bak
