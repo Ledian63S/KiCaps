@@ -1,54 +1,75 @@
 <div align="center">
 
-<img src="assets/logo.svg" width="112" alt="KiCaps logo"/>
+<img src="icon.png" width="112" alt="KiCaps"/>
 
 # KiCaps
 
-**A fast, minimal futures position-size calculator for Windows.**
+### Know your size before you take the trade.
 
-Tune your stop loss and risk, and KiCaps tells you exactly how many contracts to trade — with a verdict-first **Risk Check** that turns green / orange / red so you know at a glance whether the position is inside your limit.
+A fast, offline futures **position-size calculator** for Windows & macOS. Set your stop and your risk — KiCaps tells you exactly how many contracts to trade, and turns **green / orange / red** the moment you step outside your limit.
 
 <br/>
 
-[![Download](https://img.shields.io/github/v/release/Ledian63S/KiCaps?label=Download%20for%20Windows&style=for-the-badge&logo=windows&color=f2853d)](https://github.com/Ledian63S/KiCaps/releases/latest)
+[![Download](https://img.shields.io/github/v/release/Ledian63S/KiCaps?label=Download&style=for-the-badge&color=f2853d)](https://github.com/Ledian63S/KiCaps/releases/latest)
 
-![Platform](https://img.shields.io/badge/platform-Windows%2010%2F11-0b0c0e?style=flat-square)
+![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS-0b0c0e?style=flat-square)
 ![Electron](https://img.shields.io/badge/Electron-35-47848F?style=flat-square&logo=electron&logoColor=white)
 ![React](https://img.shields.io/badge/React-18-20232a?style=flat-square&logo=react&logoColor=61dafb)
+![Offline](https://img.shields.io/badge/works-100%25%20offline-2f8f5a?style=flat-square)
 ![License](https://img.shields.io/badge/license-MIT-2f8f5a?style=flat-square)
 
 <br/>
 
-<img src="assets/screenshot.png" width="780" alt="KiCaps — Position Calculator"/>
+<img src="assets/screenshot.png" width="860" alt="KiCaps — position sizing with the Risk Check verdict and Stop Loss Ladder"/>
 
 </div>
 
 ---
 
-## Download & Install
+## How it works
 
-1. Open the [**latest release**](https://github.com/Ledian63S/KiCaps/releases/latest).
-2. Under **Assets**, download **`KiCaps-Setup-<version>.exe`**.
-3. Run the installer — it adds a desktop and Start Menu shortcut, then launches KiCaps.
+Position sizing is one equation, and KiCaps keeps it honest:
 
-> **Note:** The app isn't code-signed, so Windows SmartScreen may show a warning on first run. Click **More info → Run anyway**.
+```
+contracts = risk budget ÷ (stop loss in points × point value)
+```
 
-Prefer to run from source? See [Running from Source](#running-from-source).
+You give it three things — **instrument**, **stop loss**, and **risk per trade** — and it does the rest:
+
+| It answers | Where you see it |
+|---|---|
+| *How many contracts?* | The big **Position Size** number |
+| *Am I actually inside my risk limit?* | The **Risk Check** verdict — green (under) / orange (on target) / red (over) |
+| *What if my stop were a bit wider or tighter?* | The **Stop Loss Ladder** — every nearby stop, priced out |
+
+Because contracts are whole numbers, your real risk almost never lands exactly on your target. KiCaps shows that gap (**Δ**) and the **utilization** bar, so "close enough" is a decision you make, not one you discover later.
 
 ---
 
 ## Features
 
-- **Verdict-first Risk Check** — the center panel recolors **green (under) / orange (on target) / red (over limit)**, so you instantly know whether the position fits your risk budget. Shows actual risk, target, the delta (Δ), and a utilization bar.
-- **Instant position sizing** — contracts recalculated in real time as you tune stop loss and risk.
-- **Stop Loss Ladder** — scrollable table centered on your stop, showing SL $, actual risk, and how each nearby level lands versus your target (green under budget, red over).
-- **Step or type** — nudge stop loss, risk, and contracts with ± buttons, or click any number to type it directly.
-- **Manual override** — bump contracts up or down from the auto value, with a one-click reset to **AUTO**.
-- **Instrument chips + watchlist** — star your favourite instruments for quick one-tap switching.
-- **Risk modes** — fixed dollar amount or % of account balance.
-- **Dark / Light / System theme.**
-- **Persistent settings** — balance, risk, and instrument remembered across sessions (configurable).
-- **Frameless window** with working minimize, maximize, close, and drag.
+- **Verdict-first Risk Check** — actual risk, target, delta, and a utilization bar. The panel recolours so a glance is enough.
+- **Stop Loss Ladder** — a scrollable table centred on your stop, showing SL $, actual risk, and how each nearby level lands vs target as colour-coded chips. Click any row to jump your stop there.
+- **Fast input** — ± buttons, **↑/↓ arrow keys** (Shift = ×5), or the **mouse wheel** over a field. Or click and type. Inputs are filtered to digits only.
+- **Manual override** — nudge contracts off the auto value, one click back to **AUTO**.
+- **Resizable layout** — drag the divider between the sizing panel and the ladder; the width is remembered.
+- **Instrument watchlist** — star your favourites for one-tap switching; hover a chip for the full name.
+- **Risk modes** — a fixed dollar amount, or a % of account balance.
+- **Dark / Light / System** themes, with reduced-motion support.
+- **Remembers your setup** — balance, risk, and instrument persist between sessions (each toggleable).
+- **Fully offline** — no network calls, no telemetry, fonts bundled locally.
+
+---
+
+## Keyboard & mouse
+
+| Action | Shortcut |
+|---|---|
+| Adjust Stop Loss / Risk | `↑` `↓` (Shift = ×5) |
+| Adjust Stop Loss / Risk | Mouse wheel over the field |
+| Jump your stop to a ladder row | Click the row |
+| Reset contracts to auto | Click **AUTO** |
+| Zoom the whole UI | `⌘ +` / `⌘ -` (macOS) |
 
 ---
 
@@ -67,36 +88,44 @@ Prefer to run from source? See [Running from Source](#running-from-source).
 
 ---
 
-## Running from Source
+## Install
 
-**Requirements:** Node.js 18+
+Grab the latest build from [**Releases**](https://github.com/Ledian63S/KiCaps/releases/latest).
+
+- **Windows** — run `KiCaps-Setup-<version>.exe` (adds desktop + Start Menu shortcuts).
+- **macOS** — open the `.dmg` and drag **KiCaps** to Applications.
+
+> Not code-signed yet. Windows SmartScreen may warn (**More info → Run anyway**); on macOS, right-click the app → **Open** the first time.
+
+---
+
+## Run from source
+
+**Requires:** Node.js 18+
 
 ```bash
 git clone https://github.com/Ledian63S/KiCaps.git
 cd KiCaps
 npm install
-npm start
+npm start          # compiles the UI, then launches Electron
 ```
 
----
+The UI lives in **`src/app.jsx`** and is compiled to `app.js` by `npm run build:js` (run automatically by `npm start`).
 
-## Building the Windows Installer
+### Build installers
 
 ```bash
-npm install
-npm run build
+npm run build       # Windows  → dist/KiCaps-Setup-<version>.exe
+npm run build:mac   # macOS    → dist/*.dmg
 ```
-
-electron-builder produces the installer at **`dist/KiCaps-Setup-<version>.exe`** (NSIS target, x64).
 
 ---
 
-## Tech Stack
+## Tech
 
-- [Electron](https://www.electronjs.org/) — cross-platform desktop shell
-- [React 18](https://react.dev/) — UI framework (bundled locally, works offline)
-- [Babel Standalone](https://babeljs.io/) — in-browser JSX transform
-- [IBM Plex Sans](https://www.ibm.com/plex/) + [JetBrains Mono](https://www.jetbrains.com/lp/mono/) — interface and numeric fonts
+- **[Electron](https://www.electronjs.org/)** — desktop shell, hardened: `contextIsolation` on, `nodeIntegration` off, strict Content-Security-Policy, no remote content.
+- **[React 18](https://react.dev/)** — bundled locally and **precompiled with [esbuild](https://esbuild.github.io/)**, so there's no runtime JSX transform shipped.
+- **[Inter](https://rsms.me/inter/) + [JetBrains Mono](https://www.jetbrains.com/lp/mono/)** — self-hosted; numbers use tabular figures so columns line up.
 
 ---
 

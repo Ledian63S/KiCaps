@@ -15,16 +15,6 @@ const ALL_INSTR = {
   MGC:  { name:'Micro Gold',       pv:1,    step:0.25 },
 };
 
-/* Alpha Traders brand themes — Dark/Light are defaults, the rest are skins */
-const THEME_OPTS = [
-  { k:'system',   name:'System',   bg:'linear-gradient(135deg,#0b0d12 0 50%,#f6f6f6 50% 100%)', sw:'#8b7bff' },
-  { k:'dark',     name:'Dark',     bg:'#0b0d12', sw:'#8b7bff' },
-  { k:'light',    name:'Light',    bg:'#ffffff', sw:'#6457a6' },
-  { k:'midnight', name:'Midnight', bg:'#000000', sw:'#8b7bff' },
-  { k:'mocha',    name:'Mocha',    bg:'#1e1e2e', sw:'#cba6f7' },
-  { k:'latte',    name:'Latte',    bg:'#eff1f5', sw:'#8839ef' },
-];
-
 const LS = {
   get:(k,d)=>{ try{const v=localStorage.getItem(k);return v!==null?JSON.parse(v):d;}catch{return d;} },
   set:(k,v)=>{ try{localStorage.setItem(k,JSON.stringify(v));}catch{} },
@@ -147,11 +137,8 @@ function App(){
     mq.addEventListener('change',h);
     return ()=>mq.removeEventListener('change',h);
   },[]);
-  const resolvedTheme = themeMode==='system' ? (sysDark?'dark':'light') : themeMode;
-  const isDark = resolvedTheme==='dark'||resolvedTheme==='midnight'||resolvedTheme==='mocha';
+  const isDark = themeMode==='dark'||(themeMode==='system'&&sysDark);
   const isLight = !isDark;
-  const [xfade, setXfade] = useState(false);
-  useEffect(()=>{ setXfade(true); const t=setTimeout(()=>setXfade(false),300); return ()=>clearTimeout(t); },[resolvedTheme]);
 
   useEffect(()=>{ document.body.className=isDark?'':'light'; },[isDark]);
 
@@ -305,7 +292,7 @@ function App(){
 
   return(
     <div style={{width:'100%',height:'100%',display:'flex',alignItems:'center',justifyContent:'center'}}>
-      <div ref={winRef} className={`w theme-${resolvedTheme}${xfade?' theme-xfade':''}`}
+      <div ref={winRef} className={`w${isLight?' light-theme':''}`}
         style={{...winStyle,...(minimized?{height:'46px'}:{})}}>
 
         {/* ── TITLEBAR ── */}
@@ -542,13 +529,10 @@ function App(){
                   <div className="st-row"><span className="st-lbl">Remember Instrument</span><Toggle checked={remInstr} onChange={setRemInstr}/></div>
                 </div>
                 <div className="st-sec">
-                  <div className="st-head">Theme</div>
-                  <div className="theme-grid">
-                    {THEME_OPTS.map(t=>(
-                      <button key={t.k} className={`theme-opt${themeMode===t.k?' on':''}`} onClick={()=>setThemeMode(t.k)} title={t.name}>
-                        <span className="theme-sw" style={{background:t.bg, ['--sw-accent']:t.sw}}></span>
-                        <span className="theme-name">{t.name}</span>
-                      </button>
+                  <div className="st-head">Appearance</div>
+                  <div className="seg">
+                    {['system','dark','light'].map(m=>(
+                      <button key={m} className={`seg-btn${themeMode===m?' on':''}`} onClick={()=>setThemeMode(m)}>{m.toUpperCase()}</button>
                     ))}
                   </div>
                 </div>
