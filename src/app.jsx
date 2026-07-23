@@ -19,6 +19,13 @@ const LS = {
   get:(k,d)=>{ try{const v=localStorage.getItem(k);return v!==null?JSON.parse(v):d;}catch{return d;} },
   set:(k,v)=>{ try{localStorage.setItem(k,JSON.stringify(v));}catch{} },
 };
+
+/* keep only digits and a single decimal point */
+const sanitizeNum = (s)=>{
+  s = String(s).replace(/[^0-9.]/g,'');
+  const i = s.indexOf('.');
+  return i<0 ? s : s.slice(0,i+1) + s.slice(i+1).replace(/\./g,'');
+};
 const f$   = n=>(n==null||isNaN(n))?'—':'$'+Math.abs(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
 const fPts = n=>n%1===0?String(n):n.toFixed(2);
 
@@ -66,6 +73,8 @@ function App(){
 
   /* resizable columns */
   const bodyRef  = useRef(null);
+  const slInRef  = useRef(null);
+  const riskInRef= useRef(null);
   const [leftW, setLeftW]       = useState(()=>LS.get('q6-leftw', 286));
   const [resizing, setResizing] = useState(false);
   useEffect(()=>{ LS.set('q6-leftw', leftW); },[leftW]);
@@ -252,6 +261,18 @@ function App(){
     return String(+v.toFixed(2));
   });
 
+  /* mouse-wheel to adjust SL / Risk (native, non-passive so we can preventDefault) */
+  useEffect(()=>{
+    const slEl=slInRef.current, rkEl=riskInRef.current;
+    function onSl(e){ e.preventDefault(); const m=(e.deltaY<0?1:-1)*(e.shiftKey?5:1);
+      setSlPts(prev=>{ const v=Math.max(ptStep, Math.round(((parseFloat(prev)||0)+m*ptStep)/ptStep)*ptStep); return String(+v.toFixed(4)); }); }
+    function onRk(e){ e.preventDefault(); const m=(e.deltaY<0?1:-1)*(e.shiftKey?5:1);
+      setRiskVal(prev=>{ const v=Math.max(riskStep, (parseFloat(prev)||0)+m*riskStep); return String(+v.toFixed(2)); }); }
+    slEl&&slEl.addEventListener('wheel',onSl,{passive:false});
+    rkEl&&rkEl.addEventListener('wheel',onRk,{passive:false});
+    return ()=>{ slEl&&slEl.removeEventListener('wheel',onSl); rkEl&&rkEl.removeEventListener('wheel',onRk); };
+  },[ptStep, riskStep]);
+
   const favInstr = favs.filter(t=>ALL_INSTR[t]);
   const instName = ALL_INSTR[instr].name;
 
@@ -366,8 +387,10 @@ function App(){
                 <div className="stepper">
                   <button className="rbtn" onClick={()=>stepSL(-1)}>−</button>
                   <div className="stepper-val">
-                    <input className="num-in num-lg" type="number" value={slPts} autoFocus
-                      step={ptStep} placeholder="0" onChange={e=>setSlPts(e.target.value)}/>
+                    <input className="num-in num-lg" type="text" inputMode="decimal" value={slPts} autoFocus
+                      ref={slInRef} placeholder="0" title="Scroll or ↑/↓ to adjust · Shift = ×5"
+                      onChange={e=>setSlPts(sanitizeNum(e.target.value))}
+                      onKeyDown={e=>{ if(e.key==='ArrowUp'){e.preventDefault();stepSL(e.shiftKey?5:1);} else if(e.key==='ArrowDown'){e.preventDefault();stepSL(e.shiftKey?-5:-1);} }}/>
                     <span className="unit">pts</span>
                   </div>
                   <button className="rbtn" onClick={()=>stepSL(1)}>+</button>
@@ -384,8 +407,10 @@ function App(){
                   <button className="rbtn" onClick={()=>stepRisk(-1)}>−</button>
                   <div className="stepper-val">
                     <span className="num-pre">{riskMode==='fixed'?'$':'%'}</span>
-                    <input className="num-in num-lg" type="number" value={riskVal}
-                      step={riskStep} placeholder="0" onChange={e=>setRiskVal(e.target.value)}/>
+                    <input className="num-in num-lg" type="text" inputMode="decimal" value={riskVal}
+                      ref={riskInRef} placeholder="0" title="Scroll or ↑/↓ to adjust · Shift = ×5"
+                      onChange={e=>setRiskVal(sanitizeNum(e.target.value))}
+                      onKeyDown={e=>{ if(e.key==='ArrowUp'){e.preventDefault();stepRisk(e.shiftKey?5:1);} else if(e.key==='ArrowDown'){e.preventDefault();stepRisk(e.shiftKey?-5:-1);} }}/>
                   </div>
                   <button className="rbtn" onClick={()=>stepRisk(1)}>+</button>
                 </div>
