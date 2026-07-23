@@ -11,9 +11,10 @@
   "build": {
     "appId": "com.kicaps.calculator",
     "productName": "KiCaps",
+    "artifactName": "KiCaps-Setup-${version}.${ext}",
     "asar": false,
     "files": [
-      "Quanta V2.html",
+      "KiCaps.html",
       "main.js",
       "preload.js",
       "icon.png",

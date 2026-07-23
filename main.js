@@ -5,10 +5,10 @@ let win;
 
 function createWindow() {
   win = new BrowserWindow({
-    width: 820,
-    height: 700,
-    minWidth: 700,
-    minHeight: 580,
+    width: 720,
+    height: 600,
+    minWidth: 660,
+    minHeight: 520,
     frame: false,
     hasShadow: true,
     thickFrame: false,
@@ -22,7 +22,7 @@ function createWindow() {
     },
   });
 
-  win.loadFile('Quanta V2.html');
+  win.loadFile('KiCaps.html');
   win.setMenuBarVisibility(false);
   win.webContents.on('did-finish-load', () => {
     win.webContents.executeJavaScript(

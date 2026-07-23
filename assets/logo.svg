@@ -1,0 +1,26 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="KiCaps logo">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#15130f"/>
+      <stop offset="1" stop-color="#0a0b0d"/>
+    </linearGradient>
+    <linearGradient id="mark" x1="0.1" y1="0" x2="0.9" y2="1">
+      <stop offset="0" stop-color="#ffa768"/>
+      <stop offset="1" stop-color="#f2853d"/>
+    </linearGradient>
+  </defs>
+
+  <!-- tile -->
+  <rect x="16" y="16" width="480" height="480" rx="112" fill="url(#bg)"/>
+  <rect x="16.5" y="16.5" width="479" height="479" rx="111.5" fill="none" stroke="#ffffff" stroke-opacity="0.08"/>
+
+  <!-- K -->
+  <rect x="158" y="150" width="52" height="212" rx="12" fill="url(#mark)"/>
+  <g stroke="url(#mark)" stroke-width="52" stroke-linecap="round">
+    <path d="M206 256 L338 152"/>
+    <path d="M206 256 L338 360"/>
+  </g>
+
+  <!-- accent tick (echoes the app's 'live' / risk accent) -->
+  <rect x="322" y="326" width="34" height="34" rx="9" fill="#57b981"/>
+</svg>
