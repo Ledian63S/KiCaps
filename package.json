@@ -5,16 +5,19 @@
   "main": "main.js",
   "author": "Ledian63S",
   "scripts": {
-    "start": "electron .",
-    "build": "electron-builder --win"
+    "build:js": "esbuild src/app.jsx --outfile=app.js --jsx=transform --loader:.jsx=jsx --target=es2020 --charset=utf8",
+    "start": "npm run build:js && electron .",
+    "build": "npm run build:js && electron-builder --win",
+    "build:mac": "npm run build:js && electron-builder --mac"
   },
   "build": {
     "appId": "com.kicaps.calculator",
     "productName": "KiCaps",
     "artifactName": "KiCaps-Setup-${version}.${ext}",
-    "asar": false,
+    "asar": true,
     "files": [
       "KiCaps.html",
+      "app.js",
       "main.js",
       "preload.js",
       "icon.png",
@@ -31,6 +34,13 @@
       ],
       "icon": "icon.ico"
     },
+    "mac": {
+      "target": [
+        "dmg"
+      ],
+      "icon": "icon.png",
+      "category": "public.app-category.finance"
+    },
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
@@ -44,6 +54,7 @@
   "devDependencies": {
     "@electron/packager": "^20.0.0",
     "electron": "^35.0.0",
-    "electron-builder": "^25.1.8"
+    "electron-builder": "^25.1.8",
+    "esbuild": "^0.28.1"
   }
 }

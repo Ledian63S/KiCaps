@@ -4,3 +4,6 @@ kicaps-src/
 .claude/
 *.log
 .DS_Store
+
+# generated from src/app.jsx by `npm run build:js`
+app.js
