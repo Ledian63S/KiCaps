@@ -1,9 +1,9 @@
 {
   "name": "kicaps",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "KiCaps — Futures Position Size Calculator",
   "main": "main.js",
-  "author": "Ledian63S",
+  "author": "Ledian Leka",
   "scripts": {
     "build:js": "esbuild src/app.jsx --outfile=app.js --jsx=transform --loader:.jsx=jsx --target=es2020 --charset=utf8",
     "start": "npm run build:js && electron .",
