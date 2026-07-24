@@ -64,6 +64,8 @@ function App(){
   /* ui */
   const [showManage,   setShowManage]   = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [appVersion,   setAppVersion]   = useState('1.0.0');
+  useEffect(()=>{ window.electronAPI?.getVersion?.().then(v=>v&&setAppVersion(v)).catch(()=>{}); },[]);
   const [flashRow,     setFlashRow]     = useState(null);
   const [minimized,    setMinimized]    = useState(false);
   const [closed,       setClosed]       = useState(false);
@@ -537,7 +539,22 @@ function App(){
                   </div>
                 </div>
                 <div className="st-sec">
-                  <div className="st-foot">KiCaps v1.0 · Made for traders</div>
+                  <div className="st-head">About</div>
+                  <div className="ab-row">
+                    <img className="ab-icon" src="icon.png" alt=""/>
+                    <div>
+                      <div className="ab-name">KiCaps</div>
+                      <div className="ab-ver">Version {appVersion}</div>
+                    </div>
+                  </div>
+                  <div className="ab-tag">Futures position-size calculator with a verdict-first Risk Check. Works fully offline.</div>
+                  <div className="ab-meta">
+                    Built by Ledian63S · MIT License<br/>
+                    <span className="ab-link" data-ot="1"
+                      onClick={()=>window.electronAPI&&window.electronAPI.openExternal('https://github.com/Ledian63S/KiCaps')}>
+                      github.com/Ledian63S/KiCaps
+                    </span>
+                  </div>
                 </div>
               </div>
             )}

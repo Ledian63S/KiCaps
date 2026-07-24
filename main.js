@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain } = require('electron');
+const { app, BrowserWindow, ipcMain, shell } = require('electron');
 const path = require('path');
 
 let win;
@@ -41,6 +41,13 @@ app.whenReady().then(() => {
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();
+});
+
+ipcMain.handle('app-version', () => app.getVersion());
+
+/* Only ever open our own repo — never an arbitrary URL from the renderer. */
+ipcMain.on('open-external', (_e, url) => {
+  if (typeof url === 'string' && /^https:\/\/github\.com\/Ledian63S\//.test(url)) shell.openExternal(url);
 });
 
 ipcMain.on('win-minimize', () => win && win.minimize());
