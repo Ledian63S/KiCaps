@@ -248,15 +248,20 @@ body.light{ background:#e6e8ec; }
 .st-foot { font-family:var(--ui); font-size:9px; color:var(--faint); text-align:center; letter-spacing:.04em; }
 
 /* About / credits */
-.ab-row  { display:flex; align-items:center; gap:11px; }
-.ab-icon { width:36px; height:36px; border-radius:9px; flex-shrink:0; }
-.ab-name { font-family:var(--ui); font-size:13px; font-weight:700; color:var(--text); }
-.ab-ver  { font-family:var(--num); font-size:10px; color:var(--muted); margin-top:2px; }
-.ab-tag  { font-family:var(--ui); font-size:11px; color:var(--muted); line-height:1.5; margin-top:9px; }
-.ab-meta { font-family:var(--ui); font-size:10px; color:var(--faint); line-height:1.7; margin-top:9px; }
-.ab-link { color:var(--accent); cursor:pointer; display:inline-flex; align-items:center; gap:5px; }
-.ab-link:hover { text-decoration:underline; }
-.ab-gh { width:12px; height:12px; fill:currentColor; flex:none; }
+.ab-row   { display:flex; align-items:center; gap:11px; }
+/* icon.png carries the macOS grid margin (artwork is 80% of the canvas) —
+   scale it inside a clipped box so it fills the 36px tile like a real app icon */
+.ab-iconw { width:36px; height:36px; flex-shrink:0; border-radius:9px; overflow:hidden; display:block; }
+.ab-icon  { width:100%; height:100%; display:block; transform:scale(1.245); }
+.ab-id    { flex:1; min-width:0; display:flex; flex-direction:column; align-items:flex-start; gap:3px; }
+/* the overlay lives inside .footer, which forces uppercase + tracking — opt out */
+.ab-name  { font-family:var(--ui); font-size:13px; font-weight:700; color:var(--text); text-transform:none; letter-spacing:.01em; }
+.ab-ver   { font-family:var(--num); font-size:9px; font-weight:600; color:var(--muted); background:var(--panel2-bg); border:1px solid var(--hair); border-radius:3px; padding:1px 5px; text-transform:none; letter-spacing:0; }
+.ab-tag   { font-family:var(--ui); font-size:11px; color:var(--muted); line-height:1.5; margin-top:10px; text-transform:none; letter-spacing:0; }
+.ab-meta  { font-family:var(--ui); font-size:9px; letter-spacing:.06em; text-transform:uppercase; color:var(--faint); margin-top:10px; padding-top:9px; border-top:1px solid var(--hair); }
+.ab-gh-link { width:26px; height:26px; flex-shrink:0; padding:0; border:1px solid var(--border); background:transparent; border-radius:var(--radius-sm); color:var(--muted); cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all .12s; }
+.ab-gh-link:hover { border-color:var(--accent); color:var(--accent); background:var(--accent-tint); }
+.ab-gh { width:14px; height:14px; fill:currentColor; display:block; }
 
 /* toggle */
 .tog { position:relative; width:30px; height:16px; flex-shrink:0; }
