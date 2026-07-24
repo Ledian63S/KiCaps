@@ -7,8 +7,8 @@
   "scripts": {
     "build:js": "esbuild src/app.jsx --outfile=app.js --jsx=transform --loader:.jsx=jsx --target=es2020 --charset=utf8",
     "start": "npm run build:js && electron .",
-    "build": "npm run build:js && electron-builder --win",
-    "build:mac": "npm run build:js && electron-builder --mac"
+    "build": "npm run build:js && electron-builder --win --publish never",
+    "build:mac": "npm run build:js && electron-builder --mac --publish never"
   },
   "build": {
     "appId": "com.kicaps.calculator",
